@@ -4,3 +4,5 @@ timestamp,agent_a,agent_b,games,workers,win,lose,draw,invalid,error,win_rate,ci_
 2026-08-05T01:45:51,agents_final_v2.0,agents_final(v1),182,1,81,101,0,0,0,0.445,0.375,0.518,0.473,0.418,評価v2.0: 帯域衝突バグで負け越し
 2026-08-05T01:45:51,agents_final_v2.1,agents_final(v1),175,1,93,82,0,0,0,0.5314,0.4576,0.6039,0.6136,0.4483,評価v2.1: 帯域修正+脅威非対称化
 2026-08-05T09:39:02,agents_final_v2/main.py,agents_final/main.py,400,3,194,206,0,0,0,0.485,0.4364,0.5339,0.55,0.42,v2.1採用判定: ミラー400戦(再構築基盤)
+2026-08-05T09:40:54,agents_final/main.py,agents_grimmsnarl/main.py,400,3,378,22,0,0,0,0.945,0.9181,0.9634,0.95,0.94,v2.1採用判定: 非ミラー基準測定 v1 vs grimmsnarl優先度ボット
+2026-08-05T09:42:23,agents_final_v2/main.py,agents_grimmsnarl/main.py,400,3,378,22,0,0,0,0.945,0.9181,0.9634,0.96,0.93,v2.1採用判定: 非ミラー v2.1 vs grimmsnarl優先度ボット
