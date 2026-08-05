@@ -78,12 +78,24 @@ def _deal(pool: list, sizes: list, rng, pad_id=None) -> list:
 
 
 def guess_opponent_deck(obs: dict, my_deck: list) -> list:
-    """相手デッキ60枚の推定。可視カードが自デッキの部分集合ならミラーとみなす。
-    そうでなければ可視カード+水エネパディングの60枚を返す。"""
+    """相手デッキ60枚の推定。
+    1. 可視ポケモンが meta_decks.ARCHETYPE_SIGNS に該当 → そのリストを使い、
+       可視カードとの齟齬は水エネパディングで吸収(_dealのpad)。
+    2. 該当なしで可視カードが自デッキの部分集合 → ミラーとみなす。
+    3. どちらでもない → 可視カード+水エネパディングの60枚。"""
     state = obs["current"]
     opp = state["players"][1 - state["yourIndex"]]
     visible = list(_iter_visible(opp, include_hand=False))
     visible += list(_stadium_owner_ids(state, 1 - state["yourIndex"]))
+    try:
+        import meta_decks
+        votes = collections.Counter(
+            meta_decks.ARCHETYPE_SIGNS[cid] for cid in visible
+            if cid in meta_decks.ARCHETYPE_SIGNS)
+        if votes:
+            return list(meta_decks.DECKS[votes.most_common(1)[0][0]])
+    except ImportError:
+        pass
     mine = collections.Counter(my_deck)
     vis = collections.Counter(visible)
     if all(mine.get(cid, 0) >= n for cid, n in vis.items()):
