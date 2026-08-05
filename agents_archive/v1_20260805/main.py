@@ -417,16 +417,6 @@ SEARCH_HORIZON = 1   # 対戦中は浅く確実に(h3×3サンプルは分散過
 SEARCH_MAX_DEPTH = 80
 MIN_OVERAGE_FOR_SEARCH = 60
 
-# タスク1: 時間予算からサンプル数を適応スケール(horizonはh1のまま。
-# h3×3は分散過多で悪化を実測済みのため深さではなく本数を増やす)
-SEARCH_SAMPLES_MIN = 3
-SEARCH_SAMPLES_MAX = 30
-SEARCH_TIME_FRACTION = 0.6   # 残り持ち時間のうち探索に使ってよい割合
-SEARCH_EST_DECISIONS = 40.0  # 1試合のMAIN判断数の初期見積り
-SEARCH_DECISION_CAP = 8.0    # 1判断の上限秒(暴走保険)
-
-_main_decisions = 0  # このプロセスで探索したMAIN判断の累計(見積り減衰用)
-
 try:
     import engine_search
     import predict as _predict_mod
@@ -531,48 +521,6 @@ def search_scores(obs: dict, samples: int = None) -> list:
     return [sum(row[i] for row in matrix) / n for i in range(len(matrix[0]))]
 
 
-_search_telemetry = []  # (samples, elapsed) 実測分布の記録用
-
-
-def search_scores_adaptive(obs: dict) -> list:
-    """時間予算内でサンプルを積み増して平均する(タスク1)。
-
-    予算 = 残り持ち時間×SEARCH_TIME_FRACTION ÷ 残り想定判断数。
-    1サンプルごとに search_begin→全候補rollout→search_end で完結させ、
-    予算超過か上限本数で打ち切って途中平均を返す。最低SEARCH_SAMPLES_MIN本。
-    """
-    import time as _time
-    global _main_decisions
-    select = obs["select"]
-    me = obs["current"]["yourIndex"]
-    root_turn = obs["current"]["turn"]
-    deck = _read_deck()
-    opp_deck = _predict_mod.guess_opponent_deck(obs, deck) if hasattr(_predict_mod, "guess_opponent_deck") else deck
-    remaining = obs.get("remainingOverageTime", 0) or 0
-    est_left = max(12.0, SEARCH_EST_DECISIONS - _main_decisions)
-    budget = min(remaining * SEARCH_TIME_FRACTION / est_left, SEARCH_DECISION_CAP)
-    _main_decisions += 1
-
-    n_options = len(select["option"])
-    totals = [0.0] * n_options
-    done = 0
-    t0 = _time.perf_counter()
-    while done < SEARCH_SAMPLES_MAX:
-        if done >= SEARCH_SAMPLES_MIN and _time.perf_counter() - t0 > budget:
-            break
-        pred = _predict_mod.predict(obs, deck, opp_deck, _search_rng)
-        try:
-            root = engine_search.search_begin(obs, **pred)
-            for i in range(n_options):
-                child = engine_search.search_step(root["searchId"], [i])
-                totals[i] += _rollout(child, me, root_turn, SEARCH_HORIZON)
-        finally:
-            engine_search.search_end()
-        done += 1
-    _search_telemetry.append((done, _time.perf_counter() - t0))
-    return [t / done for t in totals]
-
-
 RETREAT_OVERRIDE_MARGIN = 8000.0  # サイド0.8枚分の大差がなければ探索でもRETREATしない
 
 
@@ -583,7 +531,7 @@ def _search_decide_main(obs: dict) -> list:
     実負けの系統パターンだった。一方、一般の正則化は逆効果と計測済みのため
     (探索の覆しは平均的には有益)、RETREATに限定してゲートを設ける。"""
     select = obs["select"]
-    totals = search_scores_adaptive(obs)
+    totals = search_scores(obs)
     order = sorted(range(len(totals)), key=lambda i: -totals[i])
     best = order[0]
     if select["option"][best]["type"] == OPT_RETREAT and len(order) > 1:
