@@ -739,6 +739,10 @@ def reload_lessons() -> int:
 def agent(obs: dict) -> list:
     select = obs.get("select")
     if select is None:
+        # デッキ提出時に一度だけ探索可否をstderrへ出す(本番エピソードの
+        # stderr確認用。libcg.so欠品だと探索なしで静かに戦ってしまうため)
+        import sys
+        print(f"deck submit: _SEARCH_READY={_SEARCH_READY}", file=sys.stderr)
         return _read_deck()
     chosen = None
     if (
