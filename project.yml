@@ -13,6 +13,9 @@ targets:
     platform: iOS
     sources:
       - WakePuri
+    scheme:
+      testTargets:
+        - WakePuriTests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.izu0413.wakepuri
@@ -36,3 +39,14 @@ targets:
         NSBonjourServices:
           - _wakepuri._tcp
           - _wakepuri._udp
+  WakePuriTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - WakePuriTests
+    dependencies:
+      - target: WakePuri
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.izu0413.wakepuri.tests
